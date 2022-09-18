@@ -33,70 +33,76 @@ func bold(s string) string {
 	return fmt.Sprintf("\033[1m%s\033[0m", s)
 }
 
-func printHeader(filePath string, params *tableParams) error {
-	fmt.Print(black)
+func getHeader(filePath string, params *tableParams) (string, error) {
+	buffer := &strings.Builder{}
+
+	fmt.Fprint(buffer, black)
 
 	termWidth, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	for i := 0; i < termWidth; i++ {
 		if i == params.firstColumnSize {
-			fmt.Print(corner)
+			fmt.Fprint(buffer, corner)
 		} else {
-			fmt.Print(line)
+			fmt.Fprint(buffer, line)
 		}
 	}
 
 	for i := 0; i < params.firstColumnSize; i++ {
-		fmt.Print(space)
+		fmt.Fprint(buffer, space)
 	}
 
-	fmt.Print(vertical)
+	fmt.Fprint(buffer, vertical)
 
-	fmt.Print("\033[0m")
-	fmt.Print(" File: ")
-	fmt.Println(bold(filePath))
-	fmt.Print("\033[0;30m")
+	fmt.Fprint(buffer, reset)
+	fmt.Fprint(buffer, " File: ")
+	fmt.Fprintln(buffer, bold(filePath))
+	fmt.Fprint(buffer, black)
 	for i := 0; i < termWidth; i++ {
 		if i == params.firstColumnSize {
-			fmt.Print(middle)
+			fmt.Fprint(buffer, middle)
 		} else {
-			fmt.Print(line)
+			fmt.Fprint(buffer, line)
 		}
 	}
 
-	fmt.Print(reset)
+	fmt.Fprint(buffer, reset)
 
-	return nil
+	return buffer.String(), nil
 }
 
-func printFooter(params *tableParams) error {
-	fmt.Println()
+func getFooter(params *tableParams) (string, error) {
+	buffer := &strings.Builder{}
 
-	fmt.Print(black)
+	fmt.Fprintln(buffer)
+
+	fmt.Fprint(buffer, black)
 
 	termWidth, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	for i := 0; i < termWidth; i++ {
 		if i == params.firstColumnSize {
-			fmt.Print(cornerTop)
+			fmt.Fprint(buffer, cornerTop)
 		} else {
-			fmt.Print(line)
+			fmt.Fprint(buffer, line)
 		}
 	}
 
-	fmt.Print(reset)
+	fmt.Fprint(buffer, reset)
 
-	return nil
+	return buffer.String(), nil
 }
 
-func printFileLine(lineNumber int, line string, params *tableParams) {
-	fmt.Print(black)
+func printFileLine(lineNumber int, line string, params *tableParams) string {
+	buffer := &strings.Builder{}
+
+	fmt.Fprint(buffer, black)
 
 	lineNumberCharLength := len(strconv.FormatInt(int64(lineNumber), 10))
 
@@ -109,20 +115,22 @@ func printFileLine(lineNumber int, line string, params *tableParams) {
 	}
 
 	for i := 0; i < (params.firstColumnGap + correctedGap); i++ {
-		fmt.Print(space)
+		fmt.Fprint(buffer, space)
 	}
 
-	fmt.Print(lineNumber)
+	fmt.Fprint(buffer, lineNumber)
 	for i := 0; i < params.firstColumnGap; i++ {
-		fmt.Print(space)
+		fmt.Fprint(buffer, space)
 	}
-	fmt.Printf("%s ", vertical)
+	fmt.Fprintf(buffer, "%s ", vertical)
 
-	fmt.Print(reset)
-	fmt.Print(strings.ReplaceAll(line, "\t", "    "))
+	fmt.Fprint(buffer, reset)
+	fmt.Fprint(buffer, line)
+
+	return buffer.String()
 }
 
-func Print(content *string, filePath string) error {
+func Print(content *string, filePath string) (string, error) {
 	maxFirstColumnContentSize := len(strconv.FormatInt(int64(strings.Count(*content, "\n")), 10))
 	firstColumnGap := 3
 	firstColumnSize := (2 * firstColumnGap) + maxFirstColumnContentSize
@@ -137,17 +145,23 @@ func Print(content *string, filePath string) error {
 		secondColumnStart,
 	}
 
-	if err := printHeader(filePath, &params); err != nil {
-		return err
+	buffer := &strings.Builder{}
+
+	header, err := getHeader(filePath, &params)
+	if err != nil {
+		return "", nil
 	}
+	fmt.Fprint(buffer, header)
 
 	for lineNumber, line := range strings.SplitAfter(*content, "\n") {
-		printFileLine(lineNumber+1, line, &params)
+		fmt.Fprint(buffer, printFileLine(lineNumber+1, line, &params))
 	}
 
-	if err := printFooter(&params); err != nil {
-		return err
+	footer, err := getFooter(&params)
+	if err != nil {
+		return "", err
 	}
+	fmt.Fprint(buffer, footer)
 
-	return nil
+	return buffer.String(), nil
 }
