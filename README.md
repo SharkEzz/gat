@@ -7,5 +7,5 @@ A little like `cat`, but a bit better. (Heavily inspired by
 
 ## TODO
 
-- Syntax coloration
+- ~~Syntax coloration~~
 - Code enhancement

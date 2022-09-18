@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alecthomas/chroma/quick"
 	"golang.org/x/term"
 )
 
@@ -15,6 +16,7 @@ type tableParams struct {
 	firstColumnSize             int
 	fistColumnSeparatorPosition int
 	secondColumnStart           int
+	extension                   string
 }
 
 const (
@@ -125,17 +127,27 @@ func printFileLine(lineNumber int, line string, params *tableParams) string {
 	fmt.Fprintf(buffer, "%s ", vertical)
 
 	fmt.Fprint(buffer, reset)
-	fmt.Fprint(buffer, line)
+
+	if params.extension != "" {
+		quick.Highlight(buffer, line, params.extension, "terminal16m", "monokai")
+	} else {
+		fmt.Fprint(buffer, line)
+	}
 
 	return buffer.String()
 }
 
-func Print(content *string, filePath string) (string, error) {
+func Print(content *string, filePath, extension string) (string, error) {
 	maxFirstColumnContentSize := len(strconv.FormatInt(int64(strings.Count(*content, "\n")), 10))
 	firstColumnGap := 3
 	firstColumnSize := (2 * firstColumnGap) + maxFirstColumnContentSize
 	separatorPosition := firstColumnSize
 	secondColumnStart := separatorPosition + 2
+
+	lineCount := strings.Count(*content, "\n")
+	if lineCount > 10000 {
+		extension = "" // skip coloration if file is too big
+	}
 
 	params := tableParams{
 		maxFirstColumnContentSize,
@@ -143,6 +155,7 @@ func Print(content *string, filePath string) (string, error) {
 		firstColumnSize,
 		separatorPosition,
 		secondColumnStart,
+		extension,
 	}
 
 	buffer := &strings.Builder{}
