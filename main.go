@@ -5,24 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/SharkEzz/gat/pkg/printer"
 	"github.com/SharkEzz/gat/utils"
 )
-
-func getExtension(filePath string) string {
-	regex := regexp.MustCompile(`\.([a-zA-Z]+)`)
-
-	result := regex.FindAllStringSubmatch(filePath, -1)
-
-	if len(result) == 0 {
-		return ""
-	}
-
-	return result[0][1]
-}
 
 func main() {
 	noPaging := flag.Bool("no-paging", false, "Disable paging")
@@ -34,7 +21,7 @@ func main() {
 		utils.ExitWithError("please provide a file")
 	}
 
-	extension := getExtension(file)
+	extension := utils.GetExtension(file)
 
 	fileContent, err := os.ReadFile(file)
 	if err != nil {
